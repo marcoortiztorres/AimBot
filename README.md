@@ -6,4 +6,4 @@ python aimbot.py --prototxt MobileNetSSD_deploy.prototxt.txt --model MobileNetSS
 ```
 
 Keybinding:
-q - quits program
+esc - quits program

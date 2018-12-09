@@ -134,8 +134,19 @@ while True:
 
 	for contour in red_contours:
 		area = cv2.contourArea(contour)
+
+		# compute center of contour
+		M = cv2.moments(contour)
+		if M["m00"] == 0.0:
+			M["m00"] = 0.001
+		cX = int(M["m10"] / M["m00"])
+		cY = int(M["m01"] / M["m00"])
+
 		if area > 1000:
 			cv2.drawContours(image, contour, -1, (0, 0, 255), 3)
+			cv2.circle(image, (cX, cY), 7, (255, 255, 255), -1)
+			cv2.putText(image, str(cX)+","+str(cY), (cX - 20, cY - 20),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 			#print(area)
 
 	for contour in blue_contours:
@@ -150,7 +161,7 @@ while True:
 	res = cv2.medianBlur(res, 5)
 
 	# cv2.imshow('Original image', frame)
-	cv2.imshow('Color Detector', res)
+	cv2.imshow('Color Detector', frame)
 	# cv2.imshow('mask',all_masks)
 
 	# Check if the user pressed ESC key
