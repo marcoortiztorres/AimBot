@@ -4,11 +4,59 @@
 # import the necessary packages
 from imutils.video import VideoStream
 from imutils.video import FPS
+from collections import OrderedDict
+from scipy.spatial import distance as dist
 import numpy as np
 import argparse
 import imutils
 import time
 import cv2
+
+class ColorLabeler:
+	def __init__(self):
+		#Create color dictionary
+		colors = OrderedDict({"green": (0,255,0), "red": (255,0,0), "blue": (0,0,255)})
+
+		# allocate memory for the L*a*b* image, then initialize
+		# the color names list
+		self.lab = np.zeros((len(colors), 1, 3), dtype="uint8")
+		self.colorNames = []
+
+		# loop over the colors dictionary
+		for (i, (name, rgb)) in enumerate(colors.items()):
+			# update the L*a*b* array and the color names list
+			self.lab[i] = rgb
+			self.colorNames.append(name)
+
+		# convert the L*a*b* array from the RGB color space
+		# to L*a*b*
+		self.lab = cv2.cvtColor(self.lab, cv2.COLOR_RGB2LAB)
+
+	def label(self, image, c):
+		# construct a mask for the contour, then compute the
+		# average L*a*b* value for the masked region
+		mask = np.zeros(image.shape[:2], dtype="uint8")
+		cv2.drawContours(mask, [c], -1, 255, -1)
+		mask = cv2.erode(mask, None, iterations=2)
+		mean = cv2.mean(image, mask=mask)[:3]
+
+		# initialize the minimum distance found thus far
+		minDist = (np.inf, None)
+
+		# loop over the known L*a*b* color values
+		for (i, row) in enumerate(self.lab):
+			# compute the distance between the current L*a*b*
+			# color value and the mean of the image
+			d = dist.euclidean(row[0], mean)
+
+			# if the distance is smaller than the current distance,
+			# then update the bookkeeping variable
+			if d < minDist[0]:
+				minDist = (d, i)
+
+		# return the name of the color with the smallest distance
+		return self.colorNames[minDist[1]]
+
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -36,7 +84,7 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 # and initialize the FPS counter
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
-time.sleep(2.0)
+time.sleep(1.0)
 fps = FPS().start()
 
 # while there is live video loop thorugh each frame
@@ -47,75 +95,69 @@ while True:
 	# for copy pasta code
 	image = frame
 
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-	thresh = cv2.threshold(blurred, 60, 225, cv2.THRESH_BINARY_INV)[1]
+	blurred = cv2.GaussianBlur(image, (5, 5), 0)
+	hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
-	cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-	cv2.CHAIN_APPROX_SIMPLE)
-	# print(cnts)
-	cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+	lower_green = np.array([40, 20, 20])
+	upper_green = np.array([70,255,255])
 
-	# loop over the contours
-	for c in cnts:
-		# compute the center of the contour
-		M = cv2.moments(c)
-		if M["m00"] == 0.0:
-			M["m00"] = 0.001
-		cX = int(M["m10"] / M["m00"])
-		cY = int(M["m01"] / M["m00"])
+	lower_red_1 = np.array([0,70,50])
+	upper_red_1 = np.array([10,255,255])
 
-		# draw the contour and center of the shape on the image
-		cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
-		cv2.circle(image, (cX, cY), 7, (255, 255, 255), -1)
-		cv2.putText(image, str(cX)+","+str(cY), (cX - 20, cY - 20),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+	lower_red_2 = np.array([170,70,50])
+	upper_red_2 = np.array([180,255,255])
 
+	lower_blue = np.array([25, 50, 50])
+	upper_blue = np.array([32,255,255])
 
-	# # grab the frame dimensions and convert it to a blob
-	# (h, w) = frame.shape[:2]
-	# blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
-	# 	0.007843, (300, 300), 127.5)
-	#
-	# # pass the blob through the network and obtain the detections and
-	# # predictions
-	# net.setInput(blob)
-	# detections = net.forward()
-	#
-	# # loop over the detections
-	# for i in np.arange(0, detections.shape[2]):
-	# 	# extract the confidence (i.e., probability) associated with
-	# 	# the prediction
-	# 	confidence = detections[0, 0, i, 2]
-	#
-	# 	# filter out weak detections by ensuring the `confidence` is
-	# 	# greater than the minimum confidence
-	# 	if confidence > args["confidence"]:
-	# 		# extract the index of the class label from the
-	# 		# `detections`, then compute the (x, y)-coordinates of
-	# 		# the bounding box for the object
-	# 		idx = int(detections[0, 0, i, 1])
-	# 		box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-	# 		(startX, startY, endX, endY) = box.astype("int")
-	#
-	# 		# draw the prediction on the frame
-	# 		label = "{}: {:.2f}%".format(CLASSES[idx],
-	# 			confidence * 100)
-	# 		cv2.rectangle(frame, (startX, startY), (endX, endY),
-	# 			COLORS[idx], 2)
-	# 		y = startY - 15 if startY - 15 > 15 else startY + 15
-	# 		cv2.putText(frame, label, (startX, y),
-	# 			cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
+	green_mask = cv2.inRange(hsv, lower_green, upper_green)
+	_,green_contours,_ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-	# show the output frame
-	cv2.imshow("Frame", image)
-	key = cv2.waitKey(1) & 0xFF
+	red_mask1 = cv2.inRange(hsv, lower_red_1, upper_red_1)
+	red_mask_2 = cv2.inRange(hsv, lower_red_2, upper_red_2)
 
-	# if the `q` key was pressed, break from the loop
-	if key == ord("q"):
+	red_mask = red_mask1 | red_mask_2
+
+	_, red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+	blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+	_, blue_contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+	# cv2.drawContours(image, green_contours,-1,cvScalar(0, 255, 0),3)
+	# cv2.drawContours(image, red_contours, -1, cvScalar(255, 0, 0), 3)
+
+	for contour in green_contours:
+		area = cv2.contourArea(contour)
+		if area > 1000:
+			cv2.drawContours(image, contour, -1, (0, 255, 0), 3)
+			#print(area)
+
+	for contour in red_contours:
+		area = cv2.contourArea(contour)
+		if area > 1000:
+			cv2.drawContours(image, contour, -1, (0, 0, 255), 3)
+			#print(area)
+
+	for contour in blue_contours:
+		area = cv2.contourArea(contour)
+		if area > 1000:
+			cv2.drawContours(image, contour, -1, (255, 0, 0), 3)
+			#print(area)
+
+	all_masks = green_mask | red_mask | blue_mask
+
+	res = cv2.bitwise_and(frame, frame, mask=all_masks)
+	res = cv2.medianBlur(res, 5)
+
+	# cv2.imshow('Original image', frame)
+	cv2.imshow('Color Detector', res)
+	# cv2.imshow('mask',all_masks)
+
+	# Check if the user pressed ESC key
+	c = cv2.waitKey(1)
+	if c == 27:
 		break
-
-	# update the FPS counter
+		# update the FPS counter
 	fps.update()
 
 # stop the timer and display FPS information
