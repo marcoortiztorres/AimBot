@@ -6,10 +6,16 @@ boolean oKSent; //flag to check for OK communication
 char commArray [10]; //array to store communication
 int arrayCounter = 0; //integer to count through commArray
 int boredCounter = 0;
+int redPin = 18;
+int greenPin = 15;
+int bluePin = 16;
 
 void setup()
 {
  Serial1.begin(9600);
+ pinMode(redPin, OUTPUT);
+ pinMode(greenPin, OUTPUT);
+ pinMode(bluePin, OUTPUT);
 }
 
 void loop()
@@ -21,28 +27,43 @@ void loop()
 void makeMove(){
  for(int i = 0; i <= 9; i++)
   {
+  if(commArray[i] == 'K'){
+  sparki.RGB(100, 0, 0); //Outputs RED
+  setColor(255, 0, 0);  // red
+  delay(1000);
+  }
   if(commArray[i] == 'U')
    {
-     sparki.motorRotate(MOTOR_LEFT, DIR_CW, 100);
-     delay(1000);
-     sparki.moveStop();
+    sparki.RGB(0, 100, 0); // GREEN LIGHT
+    setColor(0, 255, 0);  // green
+    sparki.motorRotate(MOTOR_LEFT, DIR_CW, 40);
+    delay(1000);
+    sparki.moveStop();
    }
    else if (commArray[i] == 'R')
    {
-     sparki.motorRotate(MOTOR_RIGHT, DIR_CW, 100);
+    sparki.RGB(0, 100, 0); // GREEN LIGHT
+    setColor(0, 255, 0);  // green
+    sparki.motorRotate(MOTOR_RIGHT, DIR_CW, 100);
    }
    else if (commArray[i] == 'L')
    {
-     sparki.motorRotate(MOTOR_RIGHT, DIR_CCW, 100);
+    sparki.RGB(0, 100, 0); // GREEN LIGHT
+    setColor(0, 255, 0);  // green
+    sparki.motorRotate(MOTOR_RIGHT, DIR_CCW, 100);
    }
    else if (commArray[i] == 'D')
    {
-     sparki.motorRotate(MOTOR_LEFT, DIR_CCW, 100);
-     delay(1000);
-     sparki.moveStop();
+    sparki.RGB(0, 100, 0); // GREEN LIGHT
+    setColor(0, 255, 0);  // green
+    sparki.motorRotate(MOTOR_LEFT, DIR_CCW, 40);
+    delay(1000);
+    sparki.moveStop();
    }
    else if (commArray[i] == 'X')
    {
+   sparki.RGB(0, 100, 0); // GREEN LIGHT
+   setColor(0, 255, 0);  // green
    sparki.moveStop();
    }
    else if (commArray[i] != 0) //in case it's a character sparki doesn't know
@@ -50,8 +71,15 @@ void makeMove(){
    Serial1.print("Invalid Command");
    Serial1.println(commArray[i]); //send the character back
    }
+   else
+   {
+   sparki.RGB(0, 100, 0); // GREEN LIGHT
+   setColor(0, 255, 0);  // green
  }
+
  //memset(commArray, 0, sizeof(commArray)); //clear out commArray
+
+}
 }
 
 void readComm()
@@ -77,4 +105,16 @@ void readComm()
    }
   }
  }
+}
+
+void setColor(int red, int green, int blue)
+{
+  #ifdef COMMON_ANODE
+    red = 255 - red;
+    green = 255 - green;
+    blue = 255 - blue;
+  #endif
+  analogWrite(redPin, red);
+  analogWrite(greenPin, green);
+  analogWrite(bluePin, blue);  
 }
