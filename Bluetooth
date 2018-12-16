@@ -23,23 +23,19 @@ void makeMove(){
   {
   if(commArray[i] == 'U')
    {
-   sparki.moveForward();
-   delay(1000);
-   sparki.moveStop();
+     sparki.motorRotate(MOTOR_LEFT, DIR_CW, 100);
    }
    else if (commArray[i] == 'R') 
    {
-   sparki.moveRight();
+     sparki.motorRotate(MOTOR_RIGHT, DIR_CW, 100);
    }
    else if (commArray[i] == 'L')
    {
-   sparki.moveLeft();
+     sparki.motorRotate(MOTOR_RIGHT, DIR_CCW, 100);
    }
-   else if (commArray[i] == 'B')
+   else if (commArray[i] == 'D')
    {
-   sparki.moveBackward();
-   delay(1000);
-   sparki.moveStop();
+     sparki.motorRotate(MOTOR_LEFT, DIR_CCW, 100);
    }
    else if (commArray[i] == 'X')
    {
