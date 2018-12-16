@@ -15,9 +15,7 @@ from time import sleep
 
 #setting up Bluetooth connection
 bluetoothSerial = serial.Serial("/dev/rfcomm1", baudrate=9600)
-command = ""
 
-currRedLoc = -1
 
 # initialize the video stream, allow the cammera sensor to warmup,
 # and initialize the FPS counter
@@ -31,7 +29,10 @@ fps = FPS().start()
 # while there is live video loop thorugh each frame
 while True:
 	frame = vs.read()
-	frame = imutils.resize(frame, width=400)
+	frame = imutils.resize(frame, width=800)
+
+	commandX = ""
+	commandY = ""
 
 	# for copy pasta code
 	image = frame
@@ -75,6 +76,7 @@ while True:
 
 	for contour in red_contours:
 		area = cv2.contourArea(contour)
+
 		# compute center of contour
 		M = cv2.moments(contour)
 		if M["m00"] == 0.0:
@@ -82,11 +84,21 @@ while True:
 		cX = int(M["m10"] / M["m00"])
 		cY = int(M["m01"] / M["m00"])
 
-		if area > 1500:
+		if area > 1000:
 			cv2.drawContours(image, contour, -1, (0, 0, 255), 3)
 			cv2.circle(image, (cX, cY), 7, (255, 255, 255), -1)
 			cv2.putText(image, str(cX)+","+str(cY), (cX - 20, cY - 20),
 				cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+			if (cX < 390):
+				commandX = 'L'
+			elif (cX > 410):
+				commandX = 'R'
+			if (cY < 390):
+				commandY = 'D'
+			elif (cY > 410):
+				commandY = 'U'
+			break
 
 	# for contour in blue_contours:
 	# 	area = cv2.contourArea(contour)
@@ -103,7 +115,12 @@ while True:
 	# cv2.imshow('Original image', frame)
 	cv2.imshow('Color Detector', res)
 	# cv2.imshow('mask',all_masks)
-
+	if (commandX != ""):
+		bluetoothSerial.write(commandX.encode())
+	if (commandY != ""):
+		bluetoothSerial.write(commandY.encode())
+	bluetoothSerial.write(str("X").encode())
+	print("\nCommandX: ", commandX, "\nCommand Y: ", commandY)
 	# Check if the user pressed ESC key
 	c = cv2.waitKey(1)
 	if c == 27:
