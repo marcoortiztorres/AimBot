@@ -6,7 +6,7 @@ boolean oKSent; //flag to check for OK communication
 char commArray [10]; //array to store communication
 int arrayCounter = 0; //integer to count through commArray
 int boredCounter = 0;
-int redPin = 14;
+int redPin = 18;
 int greenPin = 15;
 int bluePin = 16;
 
@@ -36,7 +36,7 @@ void makeMove(){
    {
     sparki.RGB(0, 100, 0); // GREEN LIGHT
     setColor(0, 255, 0);  // green
-    sparki.motorRotate(MOTOR_LEFT, DIR_CW, 50);
+    sparki.motorRotate(MOTOR_LEFT, DIR_CW, 40);
     delay(1000);
     sparki.moveStop();
    }
@@ -56,7 +56,7 @@ void makeMove(){
    {
     sparki.RGB(0, 100, 0); // GREEN LIGHT
     setColor(0, 255, 0);  // green
-    sparki.motorRotate(MOTOR_LEFT, DIR_CCW, 50);
+    sparki.motorRotate(MOTOR_LEFT, DIR_CCW, 40);
     delay(1000);
     sparki.moveStop();
    }
